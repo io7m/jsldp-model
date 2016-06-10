@@ -61,12 +61,12 @@ createSession client_address =
     server <- S.get;
     config <- S.ask;
     let (session_id, pool) = SessionIDPool.fresh (idPool server) in
-    let session = Session session_id in
-    let sessions' = DM.insert session_id session (sessions server) in
+    let session   = Session session_id in
+    let sessions0 = DM.insert session_id session (sessions server) in
     do {
       S.put (server {
         idPool = pool,
-        sessions = sessions'
+        sessions = sessions0
       });
       event $ EventClientConnected client_address session_id;
       event $ EventSendServerPacket $ packetNewSession (configAddress config) client_address session_id;
