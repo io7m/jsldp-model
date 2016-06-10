@@ -21,8 +21,8 @@ data Event
   deriving (Eq, Show)
 
 packetNewSession :: Address.T -> Address.T -> SessionID.T -> Packet.T ServerMessage.T
-packetNewSession sender recip session_id =
-  Packet.packet sender recip $ ServerMessage.SMNewSession $ ServerMessage.NewSession session_id SequenceNumber.initial
+packetNewSession sender recipient session_id =
+  Packet.packet sender recipient $ ServerMessage.SMNewSession $ ServerMessage.NewSession session_id SequenceNumber.initial
 
 data Session = Session {
   sessionID :: SessionID.T
@@ -74,14 +74,13 @@ createSession client_address =
   }
 
 processClientPacket :: Packet.T ClientMessage.T -> ServerStep
-processClientPacket (Packet.T sender recipient Packet.DGarbage) =
+processClientPacket (Packet.T sender _ Packet.DGarbage) =
   do event $ EventIgnoredGarbage sender;
      return ()
 
 processClientPacket
-  (Packet.T sender recipient (Packet.DMessage (ClientMessage.CMSetup (ClientMessage.Setup magic)))) =
+  (Packet.T sender _ (Packet.DMessage (ClientMessage.CMSetup (ClientMessage.Setup magic)))) =
   do {
-    server <- S.get;
     config <- S.ask;
     if configMagic config /= magic
     then event (EventIgnoredWrongMagic sender magic) >> return ()

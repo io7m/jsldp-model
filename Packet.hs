@@ -1,7 +1,6 @@
 module Packet where
 
 import qualified Address
-import qualified SequenceNumber
 
 data Data a
   = DMessage a
@@ -15,8 +14,8 @@ data T a = T {
 } deriving (Eq, Show)
 
 packet :: Address.T -> Address.T -> a -> T a
-packet sender recip x = T sender recip $ DMessage x
+packet sender recipient x = T sender recipient $ DMessage x
 
 garbage :: Address.T -> Address.T -> T a
-garbage sender recip = T sender recip $ DGarbage
+garbage sender recipient = T sender recipient $ DGarbage
 

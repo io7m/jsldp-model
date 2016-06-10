@@ -1,10 +1,7 @@
 module SequenceNumber (T, initial, next, distance, from) where
 
-import qualified Data.Bits as DB
 import qualified Data.Word as DW
 import qualified Data.Int  as DI
-
-import Data.Bits ((.|.))
 
 newtype T =
   SN DW.Word16
