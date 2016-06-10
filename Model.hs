@@ -72,18 +72,18 @@ serverEmpty = Server {
   serverMagic    = Magic.create 0xCAFECAFE
 }
 
-type Eval =
+type ServerStep =
   S.RWST () [Event] Server DFI.Identity ()
 
-serverRun :: Eval -> Server -> (Server, [Event])
+serverRun :: ServerStep -> Server -> (Server, [Event])
 serverRun e s =
   case S.runRWS e () s of
     (_, s, es) -> (s, es)
 
-serverLogEvent :: Event -> Eval
-serverLogEvent e = S.tell [e]
+serverEvent :: Event -> ServerStep
+serverEvent e = S.tell [e]
 
-serverCreateSession :: Address.T -> Eval
+serverCreateSession :: Address.T -> ServerStep
 serverCreateSession client_address =
   do {
     server <- S.get;
@@ -95,21 +95,21 @@ serverCreateSession client_address =
         serverIDPool = pool,
         serverSessions = sessions
       });
-      serverLogEvent $ EventClientConnected client_address session_id;
-      serverLogEvent $ EventSendServerPacket $ serverPacketNewSession client_address session_id;
+      serverEvent $ EventClientConnected client_address session_id;
+      serverEvent $ EventSendServerPacket $ serverPacketNewSession client_address session_id;
     }
   }
 
-serverClientPacketProcess :: ClientPacket -> Eval
+serverClientPacketProcess :: ClientPacket -> ServerStep
 serverClientPacketProcess (ClientPacket sender PCGarbage) =
-  do serverLogEvent $ EventIgnoredGarbage sender;
+  do serverEvent $ EventIgnoredGarbage sender;
      return ()
 
 serverClientPacketProcess (ClientPacket sender (PCMessage (CMSetup (ClientMessageSetup magic)))) =
   do {
     server <- S.get;
     if serverMagic server /= magic
-    then serverLogEvent (EventIgnoredWrongMagic sender magic) >> return ()
+    then serverEvent (EventIgnoredWrongMagic sender magic) >> return ()
     else serverCreateSession sender
   }
 
