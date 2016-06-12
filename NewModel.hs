@@ -1,3 +1,6 @@
+import qualified Data.Functor.Identity as DFI
+import qualified Control.Monad.Trans.RWS.Strict as S
+
 import qualified SequenceNumber
 import qualified Data.Word as DW
 import qualified Magic
@@ -21,6 +24,7 @@ data ClientMessageMain a = ClientMessageMain {
   cmmSession  :: DW.Word32,
   cmmChannel  :: DW.Word8,
   cmmSequence :: SequenceNumber.T,
+  cmmReliable :: Bool,
   cmmData     :: [a]
 } deriving (Eq, Show)
 
@@ -65,3 +69,25 @@ data Command
   | CPong CommandPong
   deriving (Eq, Show)
 
+data ServerQueueEvent a
+  = SQESendServerMessage (ServerMessage a)
+  deriving (Eq, Show)
+
+data ServerQueue = ServerQueue {
+  sqIncomingSequence :: SequenceNumber.T
+  sqOutgoingSequence :: SequenceNumber.T
+} deriving (Eq, Show)
+
+serverQueueEmpty :: ServerQueue
+serverQueueEmpty = ServerQueue SequenceNumber.initial
+
+type ServerQueueStep a =
+  S.RWST () [ServerQueueEvent a] ServerQueue DFI.Identity ()
+
+runServerQueue :: ServerQueueStep a -> ServerQueue -> (ServerQueue, [ServerQueueEvent a])
+runServerQueue e s =
+  case S.runRWS e () s of
+    (_, s, es) -> (s, es)
+
+serverQueueStep :: ServerQueue -> Maybe (ClientMessage a) -> (ServerQueue, [ServerQueueEvent a])
+serverQueueStep q (Just (CMMain cmm)) = undefined
